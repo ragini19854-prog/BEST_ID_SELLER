@@ -1,0 +1,11 @@
+{
+  "name": "Telegram Bot",
+  "description": "xqueen",
+  "keywords": [
+    "telegram",
+    "bot",
+    "python",
+    "docker"
+  ],
+  "stack": "container"
+}
