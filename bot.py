@@ -50,7 +50,7 @@ API_ID = int(os.getenv('API_ID', '36326629'))
 API_HASH = os.getenv('API_HASH', '823e6e8c081fe363e6d739b39dc19e07')
 
 # Multiple owners support (up to 5, comma-separated in OWNER_IDS env var)
-# e.g. OWNER_IDS=123456789,987654321,111222333
+# e.g. OWNER_IDS=8316947415,6509168409,987654321
 _raw_owner_ids = os.getenv('OWNER_IDS', '')
 OWNER_IDS = [int(x.strip()) for x in _raw_owner_ids.split(',') if x.strip().isdigit()]
 if ADMIN_ID not in OWNER_IDS:
@@ -58,8 +58,8 @@ if ADMIN_ID not in OWNER_IDS:
 OWNER_IDS = OWNER_IDS[:5]  # Max 5 owners
 
 # Recharge QR and UPI settings (configurable via env vars)
-QR_IMAGE_URL = os.getenv('QR_IMAGE_URL', 'https://files.catbox.moe/x6666i.jpg')
-UPI_ID = os.getenv('UPI_ID', 'adibhai@fam')
+QR_IMAGE_URL = os.getenv('QR_IMAGE_URL', 'https://files.catbox.moe/0mkr56.jpeg')
+UPI_ID = os.getenv('UPI_ID', 'shubh412@fam')
 
 # MUST JOIN CHANNELS - TWO CHANNELS
 MUST_JOIN_CHANNEL_1 = "@BEST_OTP_GROUP_SUPPORT"
