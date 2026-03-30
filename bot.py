@@ -1073,22 +1073,22 @@ def clean_ui_and_send_menu(chat_id, user_id, text=None, markup=None):
         
         # Main menu caption with expandable blockquotes
         caption = (
-            "🌟 <b>Welcome To GMS OTP Bot</b> 🌟\n"
+            '<tg-emoji emoji-id="5373082993207921989">🌟</tg-emoji> <b>Welcome To GMS OTP Bot</b> <tg-emoji emoji-id="5373082993207921989">🌟</tg-emoji>\n'
             "<blockquote expandable>\n"
-            "🟢 Automatic OTPs — Instant & Fast\n"
-            "🔵 Easy to Use — Simple Interface\n"
-            "🟡 24/7 Support — Always Here\n"
-            "🟣 Instant Payment Approvals\n"
+            '<tg-emoji emoji-id="5368324170671202286">✨</tg-emoji> Automatic OTPs — Instant & Fast\n'
+            '<tg-emoji emoji-id="5350537057272218572">💎</tg-emoji> Easy to Use — Simple Interface\n'
+            '<tg-emoji emoji-id="5271604874419737411">🔥</tg-emoji> 24/7 Support — Always Here\n'
+            '<tg-emoji emoji-id="5469654973107908278">⚡</tg-emoji> Instant Payment Approvals\n'
             "</blockquote>\n"
             "<blockquote expandable>\n"
-            "🚀 <b>How to use GMS Bot:</b>\n"
+            '<tg-emoji emoji-id="5368322952606296312">👑</tg-emoji> <b>How to use GMS Bot:</b>\n'
             "1️⃣ Add Funds to Wallet\n"
             "2️⃣ Select Country\n"
             "3️⃣ Buy Account\n"
             "4️⃣ Login via Telegram / Telegram X / Tarbotel\n"
             "5️⃣ Receive OTP & Done ✅\n"
             "</blockquote>\n"
-            "⚡ <b>GMS — Fast. Reliable. Always On!</b>"
+            '<tg-emoji emoji-id="5469654973107908278">⚡</tg-emoji> <b>GMS — Fast. Reliable. Always On!</b>'
         )
         
         if markup is None:
@@ -1248,13 +1248,13 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
 
     # Animated intro messages
     try:
-        m1 = bot.send_message(user_id, "Hlo Sir......")
+        m1 = bot.send_message(user_id, '<tg-emoji emoji-id="5368324170671202286">✨</tg-emoji> Hlo Sir......', parse_mode="HTML")
         time.sleep(1)
         bot.delete_message(user_id, m1.message_id)
-        m2 = bot.send_message(user_id, "Ping Pong........")
+        m2 = bot.send_message(user_id, '<tg-emoji emoji-id="5271604874419737411">🔥</tg-emoji> Ping Pong........', parse_mode="HTML")
         time.sleep(1)
         bot.delete_message(user_id, m2.message_id)
-        m3 = bot.send_message(user_id, "Gms OP......")
+        m3 = bot.send_message(user_id, '<tg-emoji emoji-id="5350537057272218572">💎</tg-emoji> Gms OP......', parse_mode="HTML")
         time.sleep(1)
         bot.delete_message(user_id, m3.message_id)
     except:
