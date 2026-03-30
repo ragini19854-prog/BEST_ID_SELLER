@@ -31,5 +31,3 @@ outputType = "console"
 [userenv]
 
 [userenv.shared]
-MONGO_URL = "mongodb+srv://bsdk:betichod@cluster0.fgj1r9z.mongodb.net/?retryWrites=true&w=majority"
-PREMIUM_SESSION = "AgFwyZ4APpDriQpvyiFCN92WeGmFX0zjUWa8yWcj0LoVvMoWH7VOMxDnO4v71-UntQjYsHdv-tKTsEOJBKzrN9WWE6KTjHBZTSbE-ePcg5vboI4iCrmVyORK1okb1QsiUVbJpqcddNT07MYLI4e96XAvjmBtwu94m0gQ14iuvPgmzBkSrutjbbdtvGbNoYbwAAgEoNMqNLaKk4xsezvy0Ro9ObtTh6GwlPzrf4FKpPr5bXt7nGK-lsRdKjb0avvEDW_HEaZTqZa5EAClmzYFpLwBkB4PzSbnmXhgz_sZAmqJR4JSqlvodxqNag_KnphQKjKLrMPsYpFD8-q0Z6i_oCvC4JvAeAAAAAHqW472AA"
