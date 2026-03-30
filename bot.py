@@ -1245,6 +1245,21 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
                 pass
     
     ensure_user_exists(user_id, msg.from_user.first_name, msg.from_user.username, referred_by)
+
+    # Animated intro messages
+    try:
+        m1 = bot.send_message(user_id, "Hlo Sir......")
+        time.sleep(1)
+        bot.delete_message(user_id, m1.message_id)
+        m2 = bot.send_message(user_id, "Ping Pong........")
+        time.sleep(1)
+        bot.delete_message(user_id, m2.message_id)
+        m3 = bot.send_message(user_id, "Gms OP......")
+        time.sleep(1)
+        bot.delete_message(user_id, m3.message_id)
+    except:
+        pass
+
     clean_ui_and_send_menu(user_id, user_id)
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -1597,7 +1612,7 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
                 start(call.message)
                 return
             
-            msg_text = "🛠️ Support: @k4un_hu_mai"
+            msg_text = "🛠️ Support:@MADARA_X_DISTROYER"
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton("⬅️ Back", callback_data="back_to_menu"))
             
