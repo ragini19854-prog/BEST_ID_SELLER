@@ -5,9 +5,11 @@ import time
 import random
 import sys
 import os
+import shutil
 from datetime import datetime, timedelta
 from bson import ObjectId
 import asyncio
+from flask import Flask, jsonify
 
 # Event loop initialization
 try:
@@ -74,16 +76,13 @@ REFERRAL_COMMISSION = 1.5
 GLOBAL_API_ID = 36326629
 GLOBAL_API_HASH = "823e6e8c081fe363e6d739b39dc19e07"
 
-# Premium account session string (for sending premium custom emoji)
-PREMIUM_SESSION = os.getenv('PREMIUM_SESSION', 'AgFwyZ4APpDriQpvyiFCN92WeGmFX0zjUWa8yWcj0LoVvMoWH7VOMxDnO4v71-UntQjYsHdv-tKTsEOJBKzrN9WWE6KTjHBZTSbE-ePcg5vboI4iCrmVyORK1okb1QsiUVbJpqcddNT07MYLI4e96XAvjmBtwu94m0gQ14iuvPgmzBkSrutjbbdtvGbNoYbwAAgEoNMqNLaKk4xsezvy0Ro9ObtTh6GwlPzrf4FKpPr5bXt7nGK-lsRdKjb0avvEDW_HEaZTqZa5EAClmzYFpLwBkB4PzSbnmXhgz_sZAmqJR4JSqlvodxqNag_KnphQKjKLrMPsYpFD8-q0Z6i_oCvC4JvAeAAAAAHqW472AA')
-
-# Premium custom emoji constants (Pyrogram HTML format)
-E_DEVIL    = "<emoji id='5352542184493031170'>😈</emoji>"
-E_CROWN    = "<emoji id='6307750079423845494'>👑</emoji>"
-E_DIAMOND  = "<emoji id='4929195195225867512'>💎</emoji>"
-E_BUTTERFLY= "<emoji id='6307643744623531146'>🦋</emoji>"
-E_MAGIC    = "<emoji id='5352870513267973607'>✨</emoji>"
-E_HEART    = "<emoji id='6123125485661591081'>🩷</emoji>"
+# Normal emoji constants
+E_DEVIL = "😈"
+E_CROWN = "👑"
+E_DIAMOND = "💎"
+E_BUTTERFLY = "🦋"
+E_MAGIC = "✨"
+E_HEART = "🩷"
 
 # ---------------------------------------------------------------------
 # INIT
@@ -91,8 +90,57 @@ E_HEART    = "<emoji id='6123125485661591081'>🩷</emoji>"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+START_TIME = time.time()
+AUTO_DELETE_SECONDS = 300
 
 bot = telebot.TeleBot(BOT_TOKEN)
+flask_app = Flask(__name__)
+
+
+def _schedule_delete(chat_id, message_id, delay=AUTO_DELETE_SECONDS):
+    """Auto-delete a Telegram message after delay seconds."""
+    def _delete():
+        try:
+            bot.delete_message(chat_id, message_id)
+        except Exception:
+            pass
+
+    timer = threading.Timer(delay, _delete)
+    timer.daemon = True
+    timer.start()
+
+
+def _get_ram_usage_mb():
+    """Return current process RAM usage in MB (Linux-friendly)."""
+    try:
+        with open("/proc/self/statm", "r", encoding="utf-8") as f:
+            rss_pages = int(f.read().split()[1])
+        page_size = os.sysconf("SC_PAGE_SIZE")
+        return (rss_pages * page_size) / (1024 * 1024)
+    except Exception:
+        return 0.0
+
+
+@flask_app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
+
+
+@flask_app.get("/")
+def health_root():
+    return jsonify({"status": "ok", "service": "otp-bot"})
+
+
+def start_flask_server():
+    """Run lightweight Flask health server in background."""
+    try:
+        port = int(os.getenv("PORT", "8080"))
+        flask_app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False, threaded=True)
+    except Exception as e:
+        logger.error(f"Flask server error: {e}")
 
 # MongoDB Setup
 try:
@@ -1084,23 +1132,23 @@ def clean_ui_and_send_menu(chat_id, user_id, text=None, markup=None):
         
         # Main menu caption with expandable blockquotes
         caption = (
-            '<tg-emoji emoji-id="5373082993207921989">🌟</tg-emoji> <b>Welcome To GMS OTP Bot</b> <tg-emoji emoji-id="5373082993207921989">🌟</tg-emoji>\n'
-            "<blockquote expandable>\n"
-            '<tg-emoji emoji-id="5368324170671202286">✨</tg-emoji> Automatic OTPs — Instant & Fast\n'
-            '<tg-emoji emoji-id="5350537057272218572">💎</tg-emoji> Easy to Use — Simple Interface\n'
-            '<tg-emoji emoji-id="5271604874419737411">🔥</tg-emoji> 24/7 Support — Always Here\n'
-            '<tg-emoji emoji-id="5469654973107908278">⚡</tg-emoji> Instant Payment Approvals\n'
-            "</blockquote>\n"
-            "<blockquote expandable>\n"
-            '<tg-emoji emoji-id="5368322952606296312">👑</tg-emoji> <b>How to use GMS Bot:</b>\n'
-            "1️⃣ Add Funds to Wallet\n"
-            "2️⃣ Select Country\n"
-            "3️⃣ Buy Account\n"
-            "4️⃣ Login via Telegram / Telegram X / Tarbotel\n"
-            "5️⃣ Receive OTP & Done ✅\n"
-            "</blockquote>\n"
-            '<tg-emoji emoji-id="5469654973107908278">⚡</tg-emoji> <b>GMS — Fast. Reliable. Always On!</b>'
-        )
+    '🌟 <b>Welcome To GMS OTP Bot</b> 🌟\n'
+    "<blockquote expandable>\n"
+    '✨ Automatic OTPs — Instant & Fast\n'
+    '💎 Easy to Use — Simple Interface\n'
+    '🔥 24/7 Support — Always Here\n'
+    '⚡ Instant Payment Approvals\n'
+    "</blockquote>\n"
+    "<blockquote expandable>\n"
+    '👑 <b>How to use GMS Bot:</b>\n'
+    "1️⃣ Add Funds to Wallet\n"
+    "2️⃣ Select Country\n"
+    "3️⃣ Buy Account\n"
+    "4️⃣ Login via Telegram / Telegram X / Tarbotel\n"
+    "5️⃣ Receive OTP & Done ✅\n"
+    "</blockquote>\n"
+    '⚡ <b>GMS — Fast. Reliable. Always On!</b>'
+)
         
         if markup is None:
             markup = InlineKeyboardMarkup(row_width=2)
@@ -1193,20 +1241,18 @@ def transfer_balance(sender_id, receiver_id, amount):
         return False, f"Error: {str(e)}"
 
 # ---------------------------------------------------------------------
-# PREMIUM INTRO FUNCTION
+# NORMAL INTRO FUNCTION (NO PREMIUM EMOJI)
 # ---------------------------------------------------------------------
 
-PREMIUM_STICKER_PACK = "Udif7rr7_by_fStikBot"
+# Normal emojis instead of tg-emoji
+E_MAGIC     = "✨"
+E_DEVIL     = "😈"
+E_CROWN     = "👑"
+E_DIAMOND   = "💎"
+E_BUTTERFLY = "🦋"
+E_HEART     = "🩷"
 
-# Bot API HTML format for premium custom emoji (<tg-emoji> works for bots natively)
-E_MAGIC_TG    = "<tg-emoji emoji-id='5352870513267973607'>✨</tg-emoji>"
-E_DEVIL_TG    = "<tg-emoji emoji-id='5352542184493031170'>😈</tg-emoji>"
-E_CROWN_TG    = "<tg-emoji emoji-id='6307750079423845494'>👑</tg-emoji>"
-E_DIAMOND_TG  = "<tg-emoji emoji-id='4929195195225867512'>💎</tg-emoji>"
-E_BUTTERFLY_TG= "<tg-emoji emoji-id='6307643744623531146'>🦋</tg-emoji>"
-E_HEART_TG    = "<tg-emoji emoji-id='6123125485661591081'>🩷</tg-emoji>"
-
-# Cache sticker file_ids from the premium pack (fetched once via Bot API)
+# Cache sticker file_ids from the pack
 _cached_sticker_ids = []
 
 def _get_random_sticker_file_id():
@@ -1224,37 +1270,41 @@ def _get_random_sticker_file_id():
     return None
 
 def run_premium_intro(user_id):
-    """Send animated intro with premium custom emoji + random sticker via Bot API"""
+    """Send animated intro with normal emojis + random sticker"""
     try:
-        m1 = bot.send_message(user_id, f"{E_MAGIC_TG} Hlo Sir......", parse_mode='HTML')
+        m1 = bot.send_message(user_id, f"{E_MAGIC} Hlo Sir......")
         time.sleep(1)
         bot.delete_message(user_id, m1.message_id)
-        m2 = bot.send_message(user_id, f"{E_DEVIL_TG} Ping Pong........", parse_mode='HTML')
+
+        m2 = bot.send_message(user_id, f"{E_DEVIL} Ping Pong........")
         time.sleep(1)
         bot.delete_message(user_id, m2.message_id)
-        m3 = bot.send_message(user_id, f"{E_CROWN_TG} Gms OP......", parse_mode='HTML')
+
+        m3 = bot.send_message(user_id, f"{E_CROWN} Gms OP......")
         time.sleep(1)
         bot.delete_message(user_id, m3.message_id)
 
-        # Send a random sticker from the premium sticker pack
+        # Send a random sticker
         sticker_file_id = _get_random_sticker_file_id()
         if sticker_file_id:
             bot.send_sticker(user_id, sticker_file_id)
+
     except Exception as e:
-        logger.error(f"Premium intro error: {e}")
+        logger.error(f"Intro error: {e}")
         try:
             m1 = bot.send_message(user_id, '✨ Hlo Sir......')
             time.sleep(1)
             bot.delete_message(user_id, m1.message_id)
+
             m2 = bot.send_message(user_id, '🔥 Ping Pong........')
             time.sleep(1)
             bot.delete_message(user_id, m2.message_id)
+
             m3 = bot.send_message(user_id, '💎 Gms OP......')
             time.sleep(1)
             bot.delete_message(user_id, m3.message_id)
         except:
             pass
-
 # ---------------------------------------------------------------------
 # BOT HANDLERS - UPDATED WITH TWO CHANNELS
 # ---------------------------------------------------------------------
@@ -1289,10 +1339,10 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
         for channel in missing_channels:
             markup.add(InlineKeyboardButton(
                 f"📢 Join {channel}",
-                url=f"https://t.me/{channel[1:]}"
+                url=f"https://t.me/{channel[1:]} '
             ))
         
-        markup.add(InlineKeyboardButton("✅ Verify Join", callback_data="verify_join"))
+        markup.add(InlineKeyboardButton("✅ Verify Join", callback_data="verify_join" ,  style="success"))
         
         try:
             bot.send_message(
@@ -1366,7 +1416,7 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
                         url=f"https://t.me/{channel[1:]}"
                     ))
                 
-                markup.add(InlineKeyboardButton("✅ Verify Join", callback_data="verify_join"))
+                markup.add(InlineKeyboardButton("✅ Verify Join", callback_data="verify_join" ,  style="success"))
                 
                 try:
                     bot.edit_message_text(
@@ -1429,10 +1479,10 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
             # Sirf Send Balance aur Back button
             markup = InlineKeyboardMarkup(row_width=2)
             markup.add(
-                InlineKeyboardButton("📤 Send Balance", callback_data="send_balance_menu")
+                InlineKeyboardButton("📤 Send Balance", callback_data="send_balance_menu" ,  style="success")
             )
             markup.add(
-                InlineKeyboardButton("⬅️ Back", callback_data="back_to_menu")
+                InlineKeyboardButton("⬅️ Back", callback_data="back_to_menu" ,  style="primary")
             )
             
             try:
@@ -4421,6 +4471,62 @@ def broadcast_worker(source_msg, pin_silent, pin_loud, send_to_users, admin_chat
 # OTHER FUNCTIONS
 # ---------------------------------------------------------------------
 
+@bot.message_handler(commands=['ping'])
+def ping_command(message):
+    user_id = message.from_user.id
+    if is_user_banned(user_id):
+        return
+
+    try:
+        ping_start = time.time()
+        me = bot.get_me()
+        ping_ms = (time.time() - ping_start) * 1000
+
+        uptime_seconds = int(time.time() - START_TIME)
+        uptime_str = str(timedelta(seconds=uptime_seconds))
+
+        ram_mb = _get_ram_usage_mb()
+        try:
+            cpu_usage = os.getloadavg()[0]
+            cpu_text = f"{cpu_usage:.2f} load"
+        except Exception:
+            cpu_text = "N/A"
+
+        disk = shutil.disk_usage("/")
+        disk_used_percent = (disk.used / disk.total) * 100 if disk.total else 0
+
+        text = (
+            f"● ᴘɪɴɢ : {ping_ms:.0f} ms\n\n"
+            f"{me.first_name} sᴛᴀᴛɪsᴛɪᴄs :\n\n"
+            f"● ᴜᴩᴛɪᴍᴇ : {uptime_str}\n"
+            f"● ʀᴀᴍ ᴜsᴀɢᴇ : {ram_mb:.2f} MB\n"
+            f"● ᴄᴩᴜ ᴜsᴀɢᴇ : {cpu_text}\n"
+            f"● ᴅɪsᴋ ᴜsᴀɢᴇ : {disk_used_percent:.2f}%"
+        )
+
+        sent = bot.reply_to(message, text)
+        _schedule_delete(message.chat.id, sent.message_id)
+    except Exception as e:
+        logger.error(f"/ping command error: {e}")
+        sent = bot.reply_to(message, "❌ Failed to fetch ping stats.")
+        _schedule_delete(message.chat.id, sent.message_id)
+
+
+@bot.message_handler(commands=['flask'])
+def flask_command(message):
+    user_id = message.from_user.id
+    if not is_admin(user_id):
+        bot.reply_to(message, "❌ Unauthorized access")
+        return
+
+    port = os.getenv("PORT", "8080")
+    sent = bot.reply_to(
+        message,
+        f"✅ Flask health server is running.\n🌐 Port: {port}\n🔒 Security headers enabled."
+    )
+    _schedule_delete(message.chat.id, sent.message_id)
+
+
 def ask_refund_user(message):
     try:
         refund_user_id = int(message.text)
@@ -4763,6 +4869,7 @@ def restart_bot(message):
 @bot.message_handler(func=lambda m: True, content_types=['text','photo','video','document'])
 def chat_handler(msg):
     user_id = msg.from_user.id
+    _schedule_delete(msg.chat.id, msg.message_id)
     
     # Check if user is in admin add flow
     if user_id in admin_add_state:
