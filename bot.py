@@ -1339,7 +1339,7 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
         for channel in missing_channels:
             markup.add(InlineKeyboardButton(
                 f"📢 Join {channel}",
-                url=f"https://t.me/{channel[1:]} '
+               url=f"https://t.me/{channel[1:]}"
             ))
         
         markup.add(InlineKeyboardButton("✅ Verify Join", callback_data="verify_join" ,  style="success"))
