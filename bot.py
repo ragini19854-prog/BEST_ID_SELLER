@@ -50,8 +50,8 @@ API_ID = int(os.getenv('API_ID', '36326629'))
 API_HASH = os.getenv('API_HASH', '823e6e8c081fe363e6d739b39dc19e07')
 
 # UPI PAYMENT CONFIG
-UPI_ID = os.getenv('UPI_ID', 'gmsseller@upi')
-QR_IMAGE_URL = os.getenv('QR_IMAGE_URL', 'https://files.catbox.moe/x6666i.jpg')
+UPI_ID = os.getenv('UPI_ID', 'shubh412@fam')
+QR_IMAGE_URL = os.getenv('QR_IMAGE_URL', 'https://files.catbox.moe/0mkr56.jpeg')
 
 # MUST JOIN CHANNELS - TWO CHANNELS
 MUST_JOIN_CHANNEL_1 = "@GMS_COMEBACK_SOON1"
