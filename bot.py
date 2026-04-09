@@ -49,9 +49,13 @@ MONGO_URL = os.getenv('MONGO_URL', 'mongodb+srv://bsdk:betichod@cluster0.fgj1r9z
 API_ID = int(os.getenv('API_ID', '36326629'))
 API_HASH = os.getenv('API_HASH', '823e6e8c081fe363e6d739b39dc19e07')
 
+# UPI PAYMENT CONFIG
+UPI_ID = os.getenv('UPI_ID', 'gmsseller@upi')
+QR_IMAGE_URL = os.getenv('QR_IMAGE_URL', 'https://files.catbox.moe/x6666i.jpg')
+
 # MUST JOIN CHANNELS - TWO CHANNELS
 MUST_JOIN_CHANNEL_1 = "@GMS_COMEBACK_SOON1"
-MUST_JOIN_CHANNEL_2 = "@GMS_GMS_GMS"
+MUST_JOIN_CHANNEL_2 = "@ID_GMS_SELLER_bot"
 # LOG CHANNEL
 LOG_CHANNEL_ID = "-1003802534246"
 
@@ -2029,8 +2033,22 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
         
         elif data == "broadcast_menu":
             if is_admin(user_id):
-                bot.answer_callback_query(call.id, "📢 Reply any photo / document / video / text with /sendbroadcast")
-                bot.send_message(call.message.chat.id, "📢 **Broadcast Instructions**\n\nReply to any message (photo / document / video / text) with /sendbroadcast\n\n✅ The message will be forwarded as-is to all users.")
+                global IS_BROADCASTING
+                bot.answer_callback_query(call.id, "📢 Broadcast Panel Opened")
+                status_txt = "🔴 BUSY (another broadcast running)" if IS_BROADCASTING else "🟢 Ready"
+                broadcast_msg = (
+                    "📢 **Broadcast Panel**\n\n"
+                    f"📡 Status: {status_txt}\n\n"
+                    "**How to broadcast:**\n"
+                    "1. Send or forward any message here\n"
+                    "2. Reply to that message with `/sendbroadcast`\n\n"
+                    "**Options:**\n"
+                    "• `/sendbroadcast` — Send to all users\n"
+                    "• `/sendbroadcast -pin` — Send + pin silently\n"
+                    "• `/sendbroadcast -pinloud` — Send + pin with notification\n\n"
+                    "If broadcast is stuck, use `/resetbroadcast`"
+                )
+                bot.send_message(call.message.chat.id, broadcast_msg, parse_mode="Markdown")
             else:
                 bot.answer_callback_query(call.id, "❌ Unauthorized", show_alert=True)
         
@@ -2169,17 +2187,20 @@ def handle_bulk_numbers_input(msg):
     invalid_numbers = []
     
     for line in lines[:50]:
-        if re.match(r'^\+\d{10,15}$', line):
-            valid_numbers.append(line)
+        cleaned = line.strip()
+        if cleaned.startswith('+') and len(cleaned) >= 7:
+            valid_numbers.append(cleaned)
+        elif re.match(r'^\d{7,15}$', cleaned):
+            valid_numbers.append('+' + cleaned)
         else:
-            invalid_numbers.append(line)
+            invalid_numbers.append(cleaned)
     
     if not valid_numbers:
         bot.send_message(
             msg.chat.id,
             "❌ No valid phone numbers found.\n"
-            "Please enter numbers in format: +91XXXXXXXXXX\n"
-            "One per line."
+            "Please enter numbers with country code (one per line).\n"
+            "Example: +79123456789 or +8613800138000"
         )
         return
     
@@ -3114,11 +3135,11 @@ def process_recharge_amount(msg):
         caption = f"""<blockquote>💳 <b>UPI Payment Details</b> 
 
 💰 Amount: {format_currency(amount)}
-📱 UPI ID: adibhai@fam
+📱 UPI ID: {UPI_ID}
 
 📋 Instructions:
 1. Scan QR code OR send {format_currency(amount)} to above UPI
-2. After payment, click **Deposited ✅** button
+2. After payment, click <b>Deposited ✅</b> button
 3. Follow the steps to submit proof
 
 </blockquote>"""
@@ -3133,7 +3154,7 @@ def process_recharge_amount(msg):
         
         bot.send_photo(
             msg.chat.id,
-            "https://files.catbox.moe/x6666i.jpg",
+            QR_IMAGE_URL,
             caption=caption,
             parse_mode="HTML",
             reply_markup=markup
@@ -3505,8 +3526,10 @@ def handle_login_flow_messages(msg):
     
     if step == "phone":
         phone = msg.text.strip()
-        if not re.match(r'^\+\d{10,15}$', phone):
-            bot.send_message(chat_id, "❌ Invalid phone number format. Please enter with country code:\nExample: +919876543210")
+        if not phone.startswith('+'):
+            phone = '+' + phone
+        if len(phone) < 7:
+            bot.send_message(chat_id, "❌ Invalid phone number. Please enter with country code:\nExample: +919876543210 or +79123456789")
             return
         
         if not account_manager:
@@ -4083,6 +4106,16 @@ def show_user_ranking(chat_id):
 # ---------------------------------------------------------------------
 # BROADCAST FUNCTION - PERFECT FORWARD (PURE TELEBOT)
 # ---------------------------------------------------------------------
+
+@bot.message_handler(commands=['resetbroadcast'])
+def handle_resetbroadcast_command(msg):
+    """Reset stuck IS_BROADCASTING flag"""
+    global IS_BROADCASTING
+    if not is_admin(msg.from_user.id):
+        bot.send_message(msg.chat.id, "❌ Unauthorized")
+        return
+    IS_BROADCASTING = False
+    bot.send_message(msg.chat.id, "✅ Broadcast status reset. You can now start a new broadcast.")
 
 @bot.message_handler(commands=['sendbroadcast'])
 def handle_sendbroadcast_command(msg):
@@ -4672,7 +4705,7 @@ def chat_handler(msg):
         handle_remove_admin_userid(msg)
         return
     
-    if user_id == ADMIN_ID and user_id in admin_deduct_state:
+    if is_admin(user_id) and user_id in admin_deduct_state:
         pass
     
     if is_user_banned(user_id):
@@ -4686,11 +4719,11 @@ def chat_handler(msg):
     
     if (
         msg.text and msg.text.startswith('/') and
-        not (user_id == ADMIN_ID and user_id in admin_deduct_state)
+        not (is_admin(user_id) and user_id in admin_deduct_state)
     ):
         return
     
-    if user_id == ADMIN_ID and user_id in admin_deduct_state:
+    if is_admin(user_id) and user_id in admin_deduct_state:
         state = admin_deduct_state[user_id]
         
         if state["step"] == "ask_user_id":
@@ -4698,7 +4731,7 @@ def chat_handler(msg):
                 target_user_id = int(msg.text.strip())
                 user_exists = users_col.find_one({"user_id": target_user_id})
                 if not user_exists:
-                    bot.send_message(ADMIN_ID, "❌ User not found. Enter valid User ID:")
+                    bot.send_message(user_id, "❌ User not found. Enter valid User ID:")
                     return
                 
                 current_balance = get_balance(target_user_id)
@@ -4708,14 +4741,14 @@ def chat_handler(msg):
                     "current_balance": current_balance
                 }
                 bot.send_message(
-                    ADMIN_ID,
+                    user_id,
                     f"👤 User ID: {target_user_id}\n"
                     f"💰 Current Balance: {format_currency(current_balance)}\n\n"
                     f"💸 Enter amount to deduct:"
                 )
                 return
             except ValueError:
-                bot.send_message(ADMIN_ID, "❌ Invalid User ID. Enter numeric ID:")
+                bot.send_message(user_id, "❌ Invalid User ID. Enter numeric ID:")
                 return
         
         elif state["step"] == "ask_amount":
@@ -4723,11 +4756,11 @@ def chat_handler(msg):
                 amount = float(msg.text.strip())
                 current_balance = state["current_balance"]
                 if amount <= 0:
-                    bot.send_message(ADMIN_ID, "❌ Amount must be greater than 0:")
+                    bot.send_message(user_id, "❌ Amount must be greater than 0:")
                     return
                 if amount > current_balance:
                     bot.send_message(
-                        ADMIN_ID,
+                        user_id,
                         f"❌ Amount exceeds balance ({format_currency(current_balance)}):"
                     )
                     return
@@ -4738,16 +4771,16 @@ def chat_handler(msg):
                     "amount": amount,
                     "current_balance": current_balance
                 }
-                bot.send_message(ADMIN_ID, "📝 Enter reason for deduction:")
+                bot.send_message(user_id, "📝 Enter reason for deduction:")
                 return
             except ValueError:
-                bot.send_message(ADMIN_ID, "❌ Invalid amount. Enter number:")
+                bot.send_message(user_id, "❌ Invalid amount. Enter number:")
                 return
         
         elif state["step"] == "ask_reason":
             reason = msg.text.strip()
             if not reason:
-                bot.send_message(ADMIN_ID, "❌ Reason cannot be empty:")
+                bot.send_message(user_id, "❌ Reason cannot be empty:")
                 return
             
             target_user_id = state["target_user_id"]
@@ -4772,7 +4805,7 @@ def chat_handler(msg):
             })
             
             bot.send_message(
-                ADMIN_ID,
+                user_id,
                 f"✅ Balance Deducted Successfully\n\n"
                 f"👤 User: {target_user_id}\n"
                 f"💰 Amount: {format_currency(amount)}\n"
@@ -4808,7 +4841,7 @@ def chat_handler(msg):
 # ---------------------------------------------------------------------
 
 if __name__ == "__main__":
-    logger.info(f"🤖 Fixed OTP Bot Starting...")
+    logger.info(f"🤖 GMS OTP Bot Starting...")
     logger.info(f"Admin ID: {ADMIN_ID}")
     logger.info(f"Bot Token: {BOT_TOKEN[:10]}...")
     logger.info(f"Global API ID: {GLOBAL_API_ID}")
@@ -4817,6 +4850,15 @@ if __name__ == "__main__":
     logger.info(f"Must Join Channel 1: {MUST_JOIN_CHANNEL_1}")
     logger.info(f"Must Join Channel 2: {MUST_JOIN_CHANNEL_2}")
     logger.info(f"Log Channel ID: {LOG_CHANNEL_ID}")
+    logger.info(f"UPI ID: {UPI_ID}")
+    
+    IS_BROADCASTING = False
+    
+    try:
+        bot.delete_webhook(drop_pending_updates=True)
+        logger.info("✅ Webhook cleared, taking over polling...")
+    except Exception as e:
+        logger.warning(f"Webhook clear warning: {e}")
     
     try:
         coupons_col.create_index([("coupon_code", 1)], unique=True)
@@ -4832,10 +4874,17 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"❌ Failed to create admin indexes: {e}")
     
-    try:
-        bot.infinity_polling(timeout=60, long_polling_timeout=60)
-    except Exception as e:
-        logger.error(f"Bot error: {e}")
-        time.sleep(30)
-        bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    while True:
+        try:
+            logger.info("🚀 Starting polling...")
+            bot.infinity_polling(
+                timeout=60,
+                long_polling_timeout=60,
+                skip_pending=True
+            )
+        except Exception as e:
+            logger.error(f"Bot polling error: {e}")
+            IS_BROADCASTING = False
+            time.sleep(15)
+            logger.info("🔄 Restarting polling...")
 

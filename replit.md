@@ -32,3 +32,13 @@ These must be set in Replit Secrets:
 - `API_ID` — Telegram API ID (from my.telegram.org)
 - `API_HASH` — Telegram API Hash (from my.telegram.org)
 - `ADMIN_ID` — Telegram user ID of the bot administrator (numeric)
+- `UPI_ID` — Your UPI ID for payments (e.g. yourname@upi)
+- `QR_IMAGE_URL` — Direct URL to your UPI QR code image
+
+## Key Features
+
+- Supports 180+ countries for stock (all international phone formats accepted)
+- Admin can deduct balance (all admins, not just super admin)
+- Broadcast via `/sendbroadcast` (reply to a message), reset with `/resetbroadcast`
+- Notification channel: @ID_GMS_SELLER_bot
+- Bot auto-recovers from 409 polling conflicts on startup via `delete_webhook`
