@@ -5,7 +5,6 @@ import time
 import random
 import sys
 import os
-import fcntl
 from datetime import datetime, timedelta
 from bson import ObjectId
 import asyncio
@@ -33,7 +32,7 @@ telebot.types.Story.de_json = _disable_story
 from pymongo import MongoClient
 import os
 import requests
-from pyrogram import Client, enums
+from pyrogram import Client
 from pyrogram.errors import (
     ApiIdInvalid, PhoneNumberInvalid, PhoneCodeInvalid,
     PhoneCodeExpired, SessionPasswordNeeded, PasswordHashInvalid,
@@ -44,47 +43,24 @@ from pyrogram.errors import (
 # CONFIG
 # ---------------------------------------------------------------------
 
-BOT_TOKEN = os.getenv('BOT_TOKEN', '8588199256:AAGUjtP_MvXCUGctOoBfMX1-eG2nV3ATCwY')
-ADMIN_ID = int(os.getenv('ADMIN_ID', '6042317029, 8441236350'))
-MONGO_URL = os.getenv('MONGO_URL', 'mongodb+srv://bsdk:betichod@cluster0.fgj1r9z.mongodb.net/?retryWrites=true&w=majority' )
-API_ID = int(os.getenv('API_ID', '36326629'))
-API_HASH = os.getenv('API_HASH', '823e6e8c081fe363e6d739b39dc19e07')
-
-# Multiple owners support (up to 5, comma-separated in OWNER_IDS env var)
-# e.g. OWNER_IDS=8316947415,6509168409,987654321
-_raw_owner_ids = os.getenv('OWNER_IDS', '')
-OWNER_IDS = [int(x.strip()) for x in _raw_owner_ids.split(',') if x.strip().isdigit()]
-if ADMIN_ID not in OWNER_IDS:
-    OWNER_IDS.insert(0, ADMIN_ID)
-OWNER_IDS = OWNER_IDS[:5]  # Max 5 owners
-
-# Recharge QR and UPI settings (configurable via env vars)
-QR_IMAGE_URL = os.getenv('QR_IMAGE_URL', 'https://files.catbox.moe/0mkr56.jpeg')
-UPI_ID = os.getenv('UPI_ID', 'shubh412@fam')
+BOT_TOKEN = os.getenv('BOT_TOKEN', '8758505666:AAElWp1mZQlOHd3xOCKakQYRCiIXKrT9igQ')
+ADMIN_ID = int(os.getenv('ADMIN_ID', '8575496524'))
+MONGO_URL = os.getenv('MONGO_URL', 'mongodb+srv://ADIAZAZ67889:ADIAZAZ67889@cluster0.rr1kvuw.mongodb.net/?appName=Cluster0')
+API_ID = int(os.getenv('API_ID', '36330071'))
+API_HASH = os.getenv('API_HASH', '7cf95f082395bcf3d2e7c4a4a27f3ef5')
 
 # MUST JOIN CHANNELS - TWO CHANNELS
-MUST_JOIN_CHANNEL_1 = "@GMS_COMEBACK_SOON1"
-MUST_JOIN_CHANNEL_2 = "@GMS_GMS_GMS"
+MUST_JOIN_CHANNEL_1 = "@ADI_OTP_SUPPORT"
+MUST_JOIN_CHANNEL_2 = "@ADI_SUPPORT_GROUP"
 # LOG CHANNEL
-LOG_CHANNEL_ID = "-1003802534246"
+LOG_CHANNEL_ID = "-1003557056482"
 
 # Referral commission percentage
 REFERRAL_COMMISSION = 1.5
 
 # Global API Credentials for Pyrogram Login
-GLOBAL_API_ID = 36326629
-GLOBAL_API_HASH = "823e6e8c081fe363e6d739b39dc19e07"
-
-# Premium account session string (for sending premium custom emoji)
-PREMIUM_SESSION = os.getenv('PREMIUM_SESSION', 'AgFwyZ4APpDriQpvyiFCN92WeGmFX0zjUWa8yWcj0LoVvMoWH7VOMxDnO4v71-UntQjYsHdv-tKTsEOJBKzrN9WWE6KTjHBZTSbE-ePcg5vboI4iCrmVyORK1okb1QsiUVbJpqcddNT07MYLI4e96XAvjmBtwu94m0gQ14iuvPgmzBkSrutjbbdtvGbNoYbwAAgEoNMqNLaKk4xsezvy0Ro9ObtTh6GwlPzrf4FKpPr5bXt7nGK-lsRdKjb0avvEDW_HEaZTqZa5EAClmzYFpLwBkB4PzSbnmXhgz_sZAmqJR4JSqlvodxqNag_KnphQKjKLrMPsYpFD8-q0Z6i_oCvC4JvAeAAAAAHqW472AA')
-
-# Premium custom emoji constants (Pyrogram HTML format)
-E_DEVIL    = "<emoji id='5352542184493031170'>😈</emoji>"
-E_CROWN    = "<emoji id='6307750079423845494'>👑</emoji>"
-E_DIAMOND  = "<emoji id='4929195195225867512'>💎</emoji>"
-E_BUTTERFLY= "<emoji id='6307643744623531146'>🦋</emoji>"
-E_MAGIC    = "<emoji id='5352870513267973607'>✨</emoji>"
-E_HEART    = "<emoji id='6123125485661591081'>🩷</emoji>"
+GLOBAL_API_ID = 36330071
+GLOBAL_API_HASH = "7cf95f082395bcf3d2e7c4a4a27f3ef5"
 
 # ---------------------------------------------------------------------
 # INIT
@@ -95,27 +71,9 @@ logger = logging.getLogger(__name__)
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# Single-instance process lock (prevents accidental double polling in same host/container)
-_instance_lock_file = None
-
-def acquire_single_instance_lock():
-    """Ensure only one bot process runs per container/host."""
-    global _instance_lock_file
-    lock_path = "/tmp/gms_otp_bot.lock"
-    _instance_lock_file = open(lock_path, "w")
-    try:
-        fcntl.flock(_instance_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        _instance_lock_file.write(str(os.getpid()))
-        _instance_lock_file.flush()
-        logger.info(f"✅ Instance lock acquired: {lock_path}")
-        return True
-    except BlockingIOError:
-        logger.error("❌ Another bot process is already running (lock busy). Exiting this instance.")
-        return False
-
 # MongoDB Setup
 try:
-    client = MongoClient(MONGO_URL, tlsAllowInvalidCertificates=True)
+    client = MongoClient(MONGO_URL)
     db = client['otp_bot']
     users_col = db['users']
     accounts_col = db['accounts']
@@ -200,24 +158,15 @@ def init_admin():
         
         admin_count = admins_col.count_documents({})
         if admin_count == 0:
-            # Add all owners from OWNER_IDS as super admins
-            for owner_id in OWNER_IDS:
-                admin_data = {
-                    "user_id": owner_id,
-                    "added_by": "SYSTEM",
-                    "added_at": datetime.utcnow(),
-                    "is_super_admin": True
-                }
-                admins_col.update_one({"user_id": owner_id}, {"$setOnInsert": admin_data}, upsert=True)
-                logger.info(f"✅ Owner {owner_id} added to database")
-        else:
-            # Ensure all owners are always in the admins collection
-            for owner_id in OWNER_IDS:
-                admins_col.update_one(
-                    {"user_id": owner_id},
-                    {"$set": {"is_super_admin": True, "added_by": "SYSTEM"}},
-                    upsert=True
-                )
+            # Add the main admin
+            admin_data = {
+                "user_id": ADMIN_ID,
+                "added_by": "SYSTEM",
+                "added_at": datetime.utcnow(),
+                "is_super_admin": True
+            }
+            admins_col.insert_one(admin_data)
+            logger.info(f"✅ Main admin {ADMIN_ID} added to database")
     except Exception as e:
         logger.error(f"❌ Failed to initialize admin: {e}")
 
@@ -230,13 +179,13 @@ init_admin()
 def get_admin_info(user_id):
     """Get admin info by user ID"""
     try:
-        # Check if it's one of the owners
-        if int(user_id) in OWNER_IDS:
+        # Check if it's main admin
+        if str(user_id) == str(ADMIN_ID):
             user = users_col.find_one({"user_id": user_id})
             return {
                 "user_id": user_id,
                 "is_super_admin": True,
-                "name": user.get("name", "Owner") if user else "Owner"
+                "name": user.get("name", "Main Admin") if user else "Main Admin"
             }
         
         # Check in admins collection
@@ -253,8 +202,8 @@ def get_admin_info(user_id):
 def is_admin(user_id):
     """Check if user is an admin"""
     try:
-        # Check if it's one of the owners
-        if int(user_id) in OWNER_IDS:
+        # Check if it's the main admin
+        if str(user_id) == str(ADMIN_ID):
             return True
         
         # Check in admins collection
@@ -264,11 +213,8 @@ def is_admin(user_id):
         return False
 
 def is_super_admin(user_id):
-    """Check if user is one of the owners (super admins)"""
-    try:
-        return int(user_id) in OWNER_IDS
-    except:
-        return str(user_id) == str(ADMIN_ID)
+    """Check if user is the main super admin"""
+    return str(user_id) == str(ADMIN_ID)
 
 def add_admin(user_id, added_by):
     """Add a new admin (max 5 admins)"""
@@ -308,9 +254,9 @@ def remove_admin(user_id, removed_by):
         if not admin:
             return False, "User is not an admin"
         
-        # Check if trying to remove an owner
-        if int(user_id) in OWNER_IDS:
-            return False, "Cannot remove an owner"
+        # Check if trying to remove super admin
+        if str(user_id) == str(ADMIN_ID):
+            return False, "Cannot remove main admin"
         
         # Remove admin
         result = admins_col.delete_one({"user_id": user_id})
@@ -1103,54 +1049,52 @@ def clean_ui_and_send_menu(chat_id, user_id, text=None, markup=None):
         
         # Main menu caption with expandable blockquotes
         caption = (
-            '<tg-emoji emoji-id="5373082993207921989">🌟</tg-emoji> <b>Welcome To GMS OTP Bot</b> <tg-emoji emoji-id="5373082993207921989">🌟</tg-emoji>\n'
+            "🥂 <b>Welcome To Otp Bot By Adi</b> 🥂\n"
             "<blockquote expandable>\n"
-            '<tg-emoji emoji-id="5368324170671202286">✨</tg-emoji> Automatic OTPs — Instant & Fast\n'
-            '<tg-emoji emoji-id="5350537057272218572">💎</tg-emoji> Easy to Use — Simple Interface\n'
-            '<tg-emoji emoji-id="5271604874419737411">🔥</tg-emoji> 24/7 Support — Always Here\n'
-            '<tg-emoji emoji-id="5469654973107908278">⚡</tg-emoji> Instant Payment Approvals\n'
+            "- Automatic OTPs 📍\n"
+            "- Easy to Use 🥂🥂\n"
+            "- 24/7 Support 👨‍🔧\n"
+            "- Instant Payment Approvals 🧾\n"
             "</blockquote>\n"
             "<blockquote expandable>\n"
-            '<tg-emoji emoji-id="5368322952606296312">👑</tg-emoji> <b>How to use GMS Bot:</b>\n'
-            "1️⃣ Add Funds to Wallet\n"
+            "🚀 <b>How to use Bot :</b>\n"
+            "1️⃣ Recharge\n"
             "2️⃣ Select Country\n"
             "3️⃣ Buy Account\n"
-            "4️⃣ Login via Telegram / Telegram X / Tarbotel\n"
-            "5️⃣ Receive OTP & Done ✅\n"
+            "4️⃣ Get Number & Login through Telegram / Telegram X / Tarbotel\n"
+            "5️⃣ Receive OTP & You're Done ✅\n"
             "</blockquote>\n"
-            '<tg-emoji emoji-id="5469654973107908278">⚡</tg-emoji> <b>GMS — Fast. Reliable. Always On!</b>'
+            "🚀 <b>Enjoy Fast Account Buying Experience!</b>"
         )
         
         if markup is None:
             markup = InlineKeyboardMarkup(row_width=2)
             # Row 1: 2 buttons
             markup.add(
-                InlineKeyboardButton("🛍️ Buy Account", callback_data="buy_account"),
-                InlineKeyboardButton("💎 My Balance", callback_data="balance")
+                InlineKeyboardButton("🛒 Buy Account", callback_data="buy_account"),
+                InlineKeyboardButton("💰 Balance", callback_data="balance")
             )
             # Row 2: 1 button
             markup.add(
-                InlineKeyboardButton("💸 Add Funds", callback_data="recharge")
+                InlineKeyboardButton("💳 Recharge", callback_data="recharge")
             )
             # Row 3: 2 buttons
             markup.add(
-                InlineKeyboardButton("🤝 Refer & Earn", callback_data="refer_friends"),
-                InlineKeyboardButton("🎁 Redeem Coupon", callback_data="redeem_coupon")
+                InlineKeyboardButton("👥 Refer Friends", callback_data="refer_friends"),
+                InlineKeyboardButton("🎁 Redeem", callback_data="redeem_coupon")
             )
             # Row 4: 1 button
             markup.add(
-                InlineKeyboardButton("🆘 Support", callback_data="support")
+                InlineKeyboardButton("🛠️ Support", callback_data="support")
             )
             # Row 5: 1 button (only for admin)
             if is_admin(user_id):
-               markup.add(InlineKeyboardButton("⚡ Admin Panel", callback_data="admin_panel"))
-
-        menu_text = text or caption
+                markup.add(InlineKeyboardButton("👑 Admin Panel", callback_data="admin_panel"))
         
         # Send new message (TEXT ONLY - NO PHOTO)
         sent_msg = bot.send_message(
             chat_id,
-            menu_text,
+            text or caption,
             parse_mode="HTML",
             reply_markup=markup,
             disable_web_page_preview=True
@@ -1159,24 +1103,13 @@ def clean_ui_and_send_menu(chat_id, user_id, text=None, markup=None):
         return sent_msg
     except Exception as e:
         logger.error(f"Error in clean_ui_and_send_menu: {e}")
-        # Fallback: remove advanced HTML/custom-emoji tags and resend as plain text.
-        # This avoids startup failure on clients/APIs that reject tg-emoji / blockquote formats.
+        # Fallback
         try:
-            fallback_text = text or caption
-            # Keep inner text, remove tg-emoji wrapper tags
-            fallback_text = re.sub(r"</?tg-emoji[^>]*>", "", fallback_text)
-            # Replace expandable blockquote tags with simple newlines
-            fallback_text = re.sub(r"</?blockquote[^>]*>", "\n", fallback_text)
-            # Strip remaining HTML tags for maximum compatibility
-            fallback_text = re.sub(r"<[^>]+>", "", fallback_text)
-            # Normalize excessive blank lines from tag stripping
-            fallback_text = re.sub(r"\n{3,}", "\n\n", fallback_text).strip()
-
-            sent_msg = bot.send_message(chat_id, fallback_text, reply_markup=markup, disable_web_page_preview=True)
+            sent_msg = bot.send_message(chat_id, text or caption, parse_mode="HTML", reply_markup=markup)
             user_last_message[user_id] = sent_msg.message_id
             return sent_msg
-        except Exception as fallback_error:
-            logger.error(f"Fallback menu send failed: {fallback_error}")
+        except:
+            pass
 
 # ---------------------------------------------------------------------
 # BALANCE TRANSFER FUNCTIONS
@@ -1224,78 +1157,6 @@ def transfer_balance(sender_id, receiver_id, amount):
         logger.error(f"Transfer error: {e}")
         return False, f"Error: {str(e)}"
 
-# ---------------------------------------------------------------------
-# PREMIUM INTRO FUNCTION
-# ---------------------------------------------------------------------
-
-PREMIUM_STICKER_PACK = "Udif7rr7_by_fStikBot"
-
-# Bot API HTML format for premium custom emoji (<tg-emoji> works for bots natively)
-E_MAGIC_TG    = "<tg-emoji emoji-id='5352870513267973607'>✨</tg-emoji>"
-E_DEVIL_TG    = "<tg-emoji emoji-id='5352542184493031170'>😈</tg-emoji>"
-E_CROWN_TG    = "<tg-emoji emoji-id='6307750079423845494'>👑</tg-emoji>"
-E_DIAMOND_TG  = "<tg-emoji emoji-id='4929195195225867512'>💎</tg-emoji>"
-E_BUTTERFLY_TG= "<tg-emoji emoji-id='6307643744623531146'>🦋</tg-emoji>"
-E_HEART_TG    = "<tg-emoji emoji-id='6123125485661591081'>🩷</tg-emoji>"
-
-# Cache sticker file_ids from the premium pack (fetched once via Bot API)
-_cached_sticker_ids = []
-
-def _get_random_sticker_file_id():
-    """Fetch sticker set once via Bot API and return a random custom_emoji_id"""
-    global _cached_sticker_ids
-    if not _cached_sticker_ids:
-        try:
-            sticker_set = bot.get_sticker_set(PREMIUM_STICKER_PACK)
-            # Yahan file_id ki jagah custom_emoji_id fetch karna hai
-            _cached_sticker_ids = [s.custom_emoji_id for s in sticker_set.stickers if s.custom_emoji_id]
-            logger.info(f"✅ Loaded {len(_cached_sticker_ids)} emojis from {PREMIUM_STICKER_PACK}")
-        except Exception as e:
-            logger.error(f"Failed to fetch sticker set: {e}")
-    if _cached_sticker_ids:
-        return random.choice(_cached_sticker_ids)
-    return None
-    
-
-def run_premium_intro(user_id):
-    """Send animated intro with premium custom emoji + random sticker via Bot API"""
-    try:
-        m1 = bot.send_message(user_id, f"{E_MAGIC_TG} Hlo Sir......", parse_mode='HTML')
-        time.sleep(0.8)
-        bot.delete_message(user_id, m1.message_id)
-        m2 = bot.send_message(user_id, f"{E_DEVIL_TG} Ping Pong........", parse_mode='HTML')
-        time.sleep(0.8)
-        bot.delete_message(user_id, m2.message_id)
-        bot.send_message(
-            user_id,
-            f"{E_CROWN_TG} <b>Premium Emojis Ready!</b> {E_DIAMOND_TG}",
-            parse_mode='HTML'
-        )
-
-        # Custom emoji ID nikalenge aur usey send_message se HTML format mein bhejenge
-        custom_emoji_id = _get_random_sticker_file_id()
-        if custom_emoji_id:
-            bot.send_message(
-                user_id, 
-                f"<tg-emoji emoji-id='{custom_emoji_id}'>✨</tg-emoji>", 
-                parse_mode='HTML'
-            )
-
-    except Exception as e:
-        logger.error(f"Premium intro error: {e}")
-        try:
-            m1 = bot.send_message(user_id, '✨ Hlo Sir......')
-            time.sleep(1)
-            bot.delete_message(user_id, m1.message_id)
-            m2 = bot.send_message(user_id, '🔥 Ping Pong........')
-            time.sleep(1)
-            bot.delete_message(user_id, m2.message_id)
-            m3 = bot.send_message(user_id, '💎 Gms OP......')
-            time.sleep(1)
-            bot.delete_message(user_id, m3.message_id)
-        except:
-            pass
-            
 # ---------------------------------------------------------------------
 # BOT HANDLERS - UPDATED WITH TWO CHANNELS
 # ---------------------------------------------------------------------
@@ -1360,10 +1221,6 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
                 pass
     
     ensure_user_exists(user_id, msg.from_user.first_name, msg.from_user.username, referred_by)
-
-    # Premium intro in background so /start UI stays responsive
-    threading.Thread(target=run_premium_intro, args=(user_id,), daemon=True).start()
-
     clean_ui_and_send_menu(user_id, user_id)
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -1376,11 +1233,6 @@ def handle_callbacks(call):
         return
     
     logger.info(f"Callback received: {data} from user {user_id}")
-    # Acknowledge callback quickly to avoid stuck loading spinner on button clicks.
-    try:
-        bot.answer_callback_query(call.id)
-    except Exception:
-        pass
     
     try:
         if data == "verify_join":
@@ -1721,7 +1573,7 @@ Click the buttons below to join both channels, then press VERIFY ✅"""
                 start(call.message)
                 return
             
-            msg_text = "🛠️ Support:@MADARA_X_DISTROYER"
+            msg_text = "🛠️ Support: @k4un_hu_mai"
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton("⬅️ Back", callback_data="back_to_menu"))
             
@@ -2684,7 +2536,7 @@ def show_bulk_summary(user_id):
     summary += f"\n⏰ Completed at: {datetime.utcnow().strftime('%H:%M:%S')}"
     
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("⚡ Admin Panel", callback_data="admin_panel"))
+    markup.add(InlineKeyboardButton("🏠 Admin Panel", callback_data="admin_panel"))
     
     edit_or_resend(
         state["chat_id"],
@@ -2895,7 +2747,7 @@ def show_coupon_management(chat_id, message_id=None):
     )
     markup.add(
         InlineKeyboardButton("📊 Coupon Status", callback_data="admin_coupon_status"),
-        InlineKeyboardButton("🔙 Back to Admin", callback_data="admin_panel")
+        InlineKeyboardButton("⬅️ Back to Admin", callback_data="admin_panel")
     )
     
     if message_id:
@@ -3233,9 +3085,9 @@ def show_recharge_methods(chat_id, message_id, user_id):
     
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("💳 UPI Payment", callback_data="recharge_upi", style="success")
+        InlineKeyboardButton("📱 UPI Payment", callback_data="recharge_upi")
     )
-    markup.add(InlineKeyboardButton("🔙 Back", callback_data="back_to_menu", style="primary"))
+    markup.add(InlineKeyboardButton("⬅️ Back", callback_data="back_to_menu"))
     
     edit_or_resend(
         chat_id,
@@ -3262,7 +3114,7 @@ def process_recharge_amount(msg):
         caption = f"""<blockquote>💳 <b>UPI Payment Details</b> 
 
 💰 Amount: {format_currency(amount)}
-📱 UPI ID: {UPI_ID}
+📱 UPI ID: adibhai@fam
 
 📋 Instructions:
 1. Scan QR code OR send {format_currency(amount)} to above UPI
@@ -3272,7 +3124,7 @@ def process_recharge_amount(msg):
 </blockquote>"""
         
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("✅ I've Paid — Confirm", callback_data="upi_deposited", style="success"))
+        markup.add(InlineKeyboardButton("💰 Deposited ✅", callback_data="upi_deposited"))
         
         upi_payment_states[user_id] = {
             "amount": amount,
@@ -3281,7 +3133,7 @@ def process_recharge_amount(msg):
         
         bot.send_photo(
             msg.chat.id,
-            QR_IMAGE_URL,
+            "https://files.catbox.moe/x6666i.jpg",
             caption=caption,
             parse_mode="HTML",
             reply_markup=markup
@@ -3369,8 +3221,8 @@ def handle_screenshot_input(msg):
 
         markup = InlineKeyboardMarkup(row_width=2)
         markup.add(
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve_rech|{req_id}", style="success"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"cancel_rech|{req_id}", style="danger")
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_rech|{req_id}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"cancel_rech|{req_id}")
         )
         
         # Send to all admins
@@ -3915,8 +3767,8 @@ def show_referral_info(user_id, chat_id):
     message += f"Start sharing and earning today! 🎉"
     
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("📤 Share Link", url=f"https://t.me/share/url?url={referral_link}&text=Join%20GMS%20OTP%20Bot%20%E2%80%94%20Fast%2C%20Reliable%20Telegram%20Account%20Buying!", style="success"))
-    markup.add(InlineKeyboardButton("🔙 Back", callback_data="back_to_menu", style="primary"))
+    markup.add(InlineKeyboardButton("📤 Share Link", url=f"https://t.me/share/url?url={referral_link}&text=Join%20this%20awesome%20OTP%20bot%20to%20buy%20Telegram%20accounts!"))
+    markup.add(InlineKeyboardButton("⬅️ Back", callback_data="back_to_menu"))
     
     sent_msg = bot.send_message(chat_id, message, parse_mode="Markdown", reply_markup=markup)
     user_last_message[user_id] = sent_msg.message_id
@@ -3941,38 +3793,38 @@ def show_admin_panel(chat_id):
     total_admins = get_admin_count()
     
     text = (
-        f"⚡ **GMS Admin Panel**\n\n"
+        f"👑 **Admin Panel**\n\n"
         f"📊 **Statistics:**\n"
-        f"• 📦 Total Accounts: {total_accounts}\n"
-        f"• ✅ Active Accounts: {active_accounts}\n"
-        f"• 👥 Total Users: {total_users}\n"
-        f"• 🛒 Total Orders: {total_orders}\n"
-        f"• 🔒 Banned Users: {banned_users}\n"
-        f"• 🌍 Active Countries: {active_countries}\n"
-        f"• 👑 Total Admins: {total_admins}/6\n\n"
+        f"• Total Accounts: {total_accounts}\n"
+        f"• Active Accounts: {active_accounts}\n"
+        f"• Total Users: {total_users}\n"
+        f"• Total Orders: {total_orders}\n"
+        f"• Banned Users: {banned_users}\n"
+        f"• Active Countries: {active_countries}\n"
+        f"• Total Admins: {total_admins}/6\n\n"
         f"🛠️ **Management Tools:**"
     )
     
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("📲 Add Account", callback_data="add_account", style="success"),
-        InlineKeyboardButton("📣 Broadcast", callback_data="broadcast_menu", style="primary")
+        InlineKeyboardButton("➕ Add Account", callback_data="add_account"),
+        InlineKeyboardButton("📢 Broadcast", callback_data="broadcast_menu")
     )
     markup.add(
-        InlineKeyboardButton("🔄 Refund", callback_data="refund_start", style="primary"),
-        InlineKeyboardButton("🏆 Ranking", callback_data="ranking", style="primary")
+        InlineKeyboardButton("💸 Refund", callback_data="refund_start"),
+        InlineKeyboardButton("📊 Ranking", callback_data="ranking")
     )
     markup.add(
-        InlineKeyboardButton("📨 Message User", callback_data="message_user", style="primary"),
-        InlineKeyboardButton("➖ Deduct Balance", callback_data="admin_deduct_start", style="danger")
+        InlineKeyboardButton("💬 Message User", callback_data="message_user"),
+        InlineKeyboardButton("💳 Deduct Balance", callback_data="admin_deduct_start")
     )
     markup.add(
-        InlineKeyboardButton("🔒 Ban User", callback_data="ban_user", style="danger"),
-        InlineKeyboardButton("🔓 Unban User", callback_data="unban_user", style="success")
+        InlineKeyboardButton("🚫 Ban User", callback_data="ban_user"),
+        InlineKeyboardButton("✅ Unban User", callback_data="unban_user")
     )
     markup.add(
-        InlineKeyboardButton("🗺️ Countries", callback_data="manage_countries", style="primary"),
-        InlineKeyboardButton("🎫 Coupons", callback_data="admin_coupon_menu", style="success")
+        InlineKeyboardButton("🌍 Manage Countries", callback_data="manage_countries"),
+        InlineKeyboardButton("🎟 Coupon Management", callback_data="admin_coupon_menu")
     )
     
     # Show admin list for main admin
@@ -4005,13 +3857,13 @@ def show_country_management(chat_id):
     
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("🌐 Add Country", callback_data="add_country", style="success"),
-        InlineKeyboardButton("💱 Edit Price", callback_data="edit_price", style="primary")
+        InlineKeyboardButton("➕ Add Country", callback_data="add_country"),
+        InlineKeyboardButton("✏️ Edit Price", callback_data="edit_price")
     )
     markup.add(
-        InlineKeyboardButton("🗑️ Remove Country", callback_data="remove_country", style="danger")
+        InlineKeyboardButton("➖ Remove Country", callback_data="remove_country")
     )
-    markup.add(InlineKeyboardButton("🔙 Back to Admin", callback_data="admin_panel", style="primary"))
+    markup.add(InlineKeyboardButton("⬅️ Back to Admin", callback_data="admin_panel"))
     
     sent_msg = bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
     user_last_message[chat_id] = sent_msg.message_id
@@ -4956,9 +4808,6 @@ def chat_handler(msg):
 # ---------------------------------------------------------------------
 
 if __name__ == "__main__":
-    if not acquire_single_instance_lock():
-        sys.exit(1)
-
     logger.info(f"🤖 Fixed OTP Bot Starting...")
     logger.info(f"Admin ID: {ADMIN_ID}")
     logger.info(f"Bot Token: {BOT_TOKEN[:10]}...")
@@ -4983,11 +4832,10 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"❌ Failed to create admin indexes: {e}")
     
-    while True:
-        try:
-            bot.infinity_polling(timeout=60, long_polling_timeout=60)
-        except Exception as e:
-            logger.error(f"Bot polling error: {e}")
-            # 409 happens when another instance is still polling this token.
-            # Keep retrying with delay so bot auto-recovers after old instance stops.
-            time.sleep(30)
+    try:
+        bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    except Exception as e:
+        logger.error(f"Bot error: {e}")
+        time.sleep(30)
+        bot.infinity_polling(timeout=60, long_polling_timeout=60)
+
