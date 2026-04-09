@@ -44,9 +44,9 @@ from pyrogram.errors import (
 # ---------------------------------------------------------------------
 
 BOT_TOKEN = os.getenv('BOT_TOKEN', '8588199256:AAGUjtP_MvXCUGctOoBfMX1-eG2nV3ATCwY')
-ADMIN_ID = int(os.getenv('ADMIN_ID', '6042317029, 8441236350')
+ADMIN_ID = int(os.getenv('ADMIN_ID', '6042317029')
 MONGO_URL = os.getenv('MONGO_URL', 'mongodb+srv://bsdk:betichod@cluster0.fgj1r9z.mongodb.net/?retryWrites=true&w=majority')
-API_ID = int(os.getenv('API_ID', '36326629'))
+API_ID = int(os.getenv('API_ID', '36326629')
 API_HASH = os.getenv('API_HASH', '823e6e8c081fe363e6d739b39dc19e07')
 
 # MUST JOIN CHANNELS - TWO CHANNELS
@@ -59,8 +59,8 @@ LOG_CHANNEL_ID = "-1003802534246"
 REFERRAL_COMMISSION = 1.5
 
 # Global API Credentials for Pyrogram Login
-GLOBAL_API_ID = 36330071
-GLOBAL_API_HASH = "7cf95f082395bcf3d2e7c4a4a27f3ef5"
+GLOBAL_API_ID = 36326629
+GLOBAL_API_HASH = "823e6e8c081fe363e6d739b39dc19e07"
 
 # ---------------------------------------------------------------------
 # INIT
