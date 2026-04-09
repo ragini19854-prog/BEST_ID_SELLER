@@ -4838,29 +4838,44 @@ def chat_handler(msg):
         )
 
 # ---------------------------------------------------------------------
+# FLASK WEBHOOK SERVER — exclusive control, no polling conflicts
+# ---------------------------------------------------------------------
+from flask import Flask, request as flask_request, abort
+
+flask_app = Flask(__name__)
+
+WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
+WEBHOOK_PORT = int(os.getenv("PORT", 8080))
+REPLIT_DOMAIN = os.getenv("REPLIT_DEV_DOMAIN", "")
+
+@flask_app.route(WEBHOOK_PATH, methods=["POST"])
+def telegram_webhook():
+    if flask_request.headers.get("content-type") == "application/json":
+        json_str = flask_request.get_data(as_text=True)
+        update = telebot.types.Update.de_json(json_str)
+        bot.process_new_updates([update])
+        return "OK", 200
+    abort(403)
+
+@flask_app.route("/", methods=["GET"])
+def health():
+    return "GMS Bot is running via webhook ✅", 200
+
+# ---------------------------------------------------------------------
 # RUN BOT
 # ---------------------------------------------------------------------
 
 if __name__ == "__main__":
-    logger.info(f"🤖 GMS OTP Bot Starting...")
+    logger.info(f"🤖 GMS OTP Bot Starting (Webhook Mode)...")
     logger.info(f"Admin ID: {ADMIN_ID}")
     logger.info(f"Bot Token: {BOT_TOKEN[:10]}...")
-    logger.info(f"Global API ID: {GLOBAL_API_ID}")
-    logger.info(f"Global API Hash: {GLOBAL_API_HASH[:10]}...")
-    logger.info(f"Referral Commission: {REFERRAL_COMMISSION}%")
     logger.info(f"Must Join Channel 1: {MUST_JOIN_CHANNEL_1}")
     logger.info(f"Must Join Channel 2: {MUST_JOIN_CHANNEL_2}")
     logger.info(f"Log Channel ID: {LOG_CHANNEL_ID}")
     logger.info(f"UPI ID: {UPI_ID}")
-    
+
     IS_BROADCASTING = False
-    
-    try:
-        bot.delete_webhook(drop_pending_updates=True)
-        logger.info("✅ Webhook cleared, taking over polling...")
-    except Exception as e:
-        logger.warning(f"Webhook clear warning: {e}")
-    
+
     try:
         coupons_col.create_index([("coupon_code", 1)], unique=True)
         coupons_col.create_index([("status", 1)])
@@ -4868,24 +4883,32 @@ if __name__ == "__main__":
         logger.info("✅ Coupon indexes created")
     except Exception as e:
         logger.error(f"❌ Failed to create coupon indexes: {e}")
-    
+
     try:
         admins_col.create_index([("user_id", 1)], unique=True)
         logger.info("✅ Admin indexes created")
     except Exception as e:
         logger.error(f"❌ Failed to create admin indexes: {e}")
-    
-    while True:
+
+    # Set webhook — clears any other polling/webhook session automatically
+    if REPLIT_DOMAIN:
+        WEBHOOK_URL = f"https://{REPLIT_DOMAIN}{WEBHOOK_PATH}"
         try:
-            logger.info("🚀 Starting polling...")
-            bot.infinity_polling(
-                timeout=60,
-                long_polling_timeout=60,
-                skip_pending=True
-            )
+            bot.remove_webhook()
+            time.sleep(1)
+            bot.set_webhook(url=WEBHOOK_URL, drop_pending_updates=True)
+            logger.info(f"✅ Webhook set: {WEBHOOK_URL}")
         except Exception as e:
-            logger.error(f"Bot polling error: {e}")
-            IS_BROADCASTING = False
-            time.sleep(15)
-            logger.info("🔄 Restarting polling...")
+            logger.error(f"❌ Failed to set webhook: {e}")
+    else:
+        logger.warning("⚠️ REPLIT_DEV_DOMAIN not set, falling back to polling")
+        while True:
+            try:
+                bot.infinity_polling(timeout=60, long_polling_timeout=60, skip_pending=True)
+            except Exception as e:
+                logger.error(f"Polling error: {e}")
+                time.sleep(15)
+
+    logger.info(f"🚀 Starting Flask webhook server on port {WEBHOOK_PORT}...")
+    flask_app.run(host="0.0.0.0", port=WEBHOOK_PORT, debug=False)
 
