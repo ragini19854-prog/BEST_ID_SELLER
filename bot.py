@@ -1144,11 +1144,13 @@ def clean_ui_and_send_menu(chat_id, user_id, text=None, markup=None):
             # Row 5: 1 button (only for admin)
             if is_admin(user_id):
                 markup.add(InlineKeyboardButton("⚡ Admin Panel", callback_data="admin_panel", style="danger"))
+
+        menu_text = text or caption
         
         # Send new message (TEXT ONLY - NO PHOTO)
         sent_msg = bot.send_message(
             chat_id,
-            text or caption,
+            menu_text,
             parse_mode="HTML",
             reply_markup=markup,
             disable_web_page_preview=True
@@ -1157,13 +1159,24 @@ def clean_ui_and_send_menu(chat_id, user_id, text=None, markup=None):
         return sent_msg
     except Exception as e:
         logger.error(f"Error in clean_ui_and_send_menu: {e}")
-        # Fallback
+        # Fallback: remove advanced HTML/custom-emoji tags and resend as plain text.
+        # This avoids startup failure on clients/APIs that reject tg-emoji / blockquote formats.
         try:
-            sent_msg = bot.send_message(chat_id, text or caption, parse_mode="HTML", reply_markup=markup)
+            fallback_text = text or caption
+            # Keep inner text, remove tg-emoji wrapper tags
+            fallback_text = re.sub(r"</?tg-emoji[^>]*>", "", fallback_text)
+            # Replace expandable blockquote tags with simple newlines
+            fallback_text = re.sub(r"</?blockquote[^>]*>", "\n", fallback_text)
+            # Strip remaining HTML tags for maximum compatibility
+            fallback_text = re.sub(r"<[^>]+>", "", fallback_text)
+            # Normalize excessive blank lines from tag stripping
+            fallback_text = re.sub(r"\n{3,}", "\n\n", fallback_text).strip()
+
+            sent_msg = bot.send_message(chat_id, fallback_text, reply_markup=markup, disable_web_page_preview=True)
             user_last_message[user_id] = sent_msg.message_id
             return sent_msg
-        except:
-            pass
+        except Exception as fallback_error:
+            logger.error(f"Fallback menu send failed: {fallback_error}")
 
 # ---------------------------------------------------------------------
 # BALANCE TRANSFER FUNCTIONS
