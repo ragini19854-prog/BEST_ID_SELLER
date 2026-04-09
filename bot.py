@@ -704,46 +704,47 @@ def add_referral_commission(referrer_id, recharge_amount, recharge_id):
 # UPDATED: CHECK BOTH CHANNELS MEMBERSHIP
 # ---------------------------------------------------------------------
 
+def _check_single_channel(user_id, channel):
+    """
+    Returns True if the user has joined the channel, or if the channel
+    cannot be verified (bad config / bot not admin). Returns False only
+    when the user is definitively NOT a member.
+    """
+    try:
+        member = bot.get_chat_member(channel, user_id)
+        return member.status in ['member', 'administrator', 'creator']
+    except Exception as e:
+        err = str(e).lower()
+        # If the channel is misconfigured or bot has no access, skip the check
+        if 'chat not found' in err or 'user not found' in err or 'bot is not a member' in err:
+            logger.warning(f"Channel check skipped for {channel}: {e}")
+            return True  # Don't punish users for admin misconfiguration
+        logger.error(f"Error checking channel membership for {channel}: {e}")
+        return True  # Fail open so buttons still work
+
 def has_user_joined_channels(user_id):
     """Check if user has joined both mandatory channels"""
-    try:
-        # Check first channel
-        member1 = bot.get_chat_member(MUST_JOIN_CHANNEL_1, user_id)
-        status1 = member1.status in ['member', 'administrator', 'creator']
-        
-        # Check second channel
-        member2 = bot.get_chat_member(MUST_JOIN_CHANNEL_2, user_id)
-        status2 = member2.status in ['member', 'administrator', 'creator']
-        
-        return status1 and status2
-    except Exception as e:
-        logger.error(f"Error checking channel membership: {e}")
-        return False
+    return (
+        _check_single_channel(user_id, MUST_JOIN_CHANNEL_1) and
+        _check_single_channel(user_id, MUST_JOIN_CHANNEL_2)
+    )
 
 def get_missing_channels(user_id):
-    """Get list of channels user hasn't joined yet"""
+    """Get list of channels user hasn't definitively joined yet"""
     missing = []
-    try:
-        # Check first channel
+    for channel in [MUST_JOIN_CHANNEL_1, MUST_JOIN_CHANNEL_2]:
         try:
-            member1 = bot.get_chat_member(MUST_JOIN_CHANNEL_1, user_id)
-            if member1.status not in ['member', 'administrator', 'creator']:
-                missing.append(MUST_JOIN_CHANNEL_1)
-        except:
-            missing.append(MUST_JOIN_CHANNEL_1)
-        
-        # Check second channel
-        try:
-            member2 = bot.get_chat_member(MUST_JOIN_CHANNEL_2, user_id)
-            if member2.status not in ['member', 'administrator', 'creator']:
-                missing.append(MUST_JOIN_CHANNEL_2)
-        except:
-            missing.append(MUST_JOIN_CHANNEL_2)
-        
-        return missing
-    except Exception as e:
-        logger.error(f"Error getting missing channels: {e}")
-        return [MUST_JOIN_CHANNEL_1, MUST_JOIN_CHANNEL_2]
+            member = bot.get_chat_member(channel, user_id)
+            if member.status not in ['member', 'administrator', 'creator']:
+                missing.append(channel)
+        except Exception as e:
+            err = str(e).lower()
+            if 'chat not found' in err or 'bot is not a member' in err:
+                # Channel misconfigured — don't show it as missing
+                logger.warning(f"Skipping missing-channel display for {channel}: {e}")
+            else:
+                missing.append(channel)
+    return missing
 
 # ---------------------------------------------------------------------
 # COUPON UTILITY FUNCTIONS
