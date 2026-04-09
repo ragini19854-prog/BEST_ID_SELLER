@@ -4943,7 +4943,7 @@ def chat_handler(msg):
 # ---------------------------------------------------------------------
 
 if __name__ == "__main__":
-     if not acquire_single_instance_lock():
+    if not acquire_single_instance_lock():
         sys.exit(1)
 
     logger.info(f"🤖 Fixed OTP Bot Starting...")
